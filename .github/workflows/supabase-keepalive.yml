@@ -2,8 +2,9 @@ name: Supabase Keep-Alive Ping
 
 on:
   schedule:
-    # Runs every 4 days at 04:00 UTC to prevent free-tier 7-day auto-pause
-    - cron: '0 4 */4 * *'
+    # Runs daily at 04:23 UTC (off-peak minute to avoid GitHub runner congestion)
+    # Daily frequency ensures a single network/runner blip won't let Supabase hit its 7-day pause cutoff
+    - cron: '23 4 * * *'
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab anytime
 
 jobs:
@@ -12,15 +13,33 @@ jobs:
     steps:
       - name: Ping Supabase Database Endpoint
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          URL="https://mshaveldjmtnxhimfkiy.supabase.co/rest/v1/leaderboard_scores?select=score&limit=1"
+          echo "Pinging Supabase database endpoint: $URL"
+
+          # Use curl with retries, timeout, and capture both HTTP code and response body
+          RESPONSE=$(curl -sSL -w "\nHTTP_STATUS:%{http_code}" \
+            --connect-timeout 15 \
+            --max-time 30 \
+            --retry 5 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            -H "Cache-Control: no-cache, no-store" \
+            -H "Pragma: no-cache" \
             -H "apikey: sb_publishable_VLvb3zLl9twwEELumiKkjw_ifiZpghd" \
             -H "Authorization: Bearer sb_publishable_VLvb3zLl9twwEELumiKkjw_ifiZpghd" \
-            "https://mshaveldjmtnxhimfkiy.supabase.co/rest/v1/leaderboard_scores?limit=1")
-          echo "Supabase responded with HTTP status: $STATUS"
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "Successfully pinged Supabase project. Inactivity timer reset!"
+            "$URL") || CURL_EXIT=$?
+
+          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d":" -f2)
+          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS:")
+
+          echo "Response Body: $BODY"
+          echo "Supabase responded with HTTP status: $HTTP_STATUS"
+
+          if [ -n "$HTTP_STATUS" ] && [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "Successfully pinged Supabase project. Database query executed and inactivity timer reset!"
             exit 0
           else
-            echo "Unexpected status code $STATUS (Project may still be paused or spinning up)."
+            echo "Error: Supabase ping failed (curl exit code: ${CURL_EXIT:-0}, HTTP status: '${HTTP_STATUS:-none}')."
+            echo "If status is empty or DNS failed, the project may be paused in the Supabase dashboard."
             exit 1
           fi
