@@ -716,16 +716,11 @@ function M.updateSessionScore(score)
     end
 end
 
-local function createBox(name, color, x, y, size, isCircle)
+local function createBox(name, color, x, y, size)
     local group = display.newGroup()
-    local rect
     local strokeW = 2.0
 
-    if isCircle then
-        rect = display.newCircle(group, x, y, size * 0.5)
-    else
-        rect = display.newRoundedRect(group, x, y, size, size, 12)
-    end
+    local rect = display.newRoundedRect(group, x, y, size, size, 12)
     rect.strokeWidth = strokeW
 
     if color == "correct" then
@@ -765,7 +760,6 @@ function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, target
         for i = answerGroup.numChildren, 1, -1 do answerGroup[i]:removeSelf() end
     end
     local boxSize = (count > 4) and 56 or 68
-    local isCircle = isSingleInput
 
     if isStack then
         -- SPATIALIZED VERTICAL BUFFER FOR STACKS (Bass at bottom, Soprano at top)
@@ -776,20 +770,20 @@ function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, target
             local entry = userEntries[i]
             local displayName = entry and (entry.displayName or entry.name) or ""
             local posY = startY - (i - 1) * verticalSpacing
-            answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize, isCircle))
+            answerGroup:insert(createBox(displayName, "none", centerX, posY, boxSize))
         end
 
         -- Far-Right Side Action Buttons (Delete above Submit), perfectly mirroring Left Audio Pair
         local rightActionX = screenOriginX + screenW - math.max(52, screenW * 0.08)
         local midY = screenOriginY + screenH * 0.36
 
-        if not isCircle and #userEntries > 0 then
+        if not isSingleInput and #userEntries > 0 then
             createPillButton(answerGroup, "⌫ del", rightActionX, midY - 23, 86, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
-        if not isCircle and #userEntries == count and count > 1 then
+        if not isSingleInput and #userEntries == count and count > 1 then
             createPillButton(answerGroup, "↵ submit", rightActionX, midY + 23, 86, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
@@ -802,19 +796,19 @@ function M.updateAnswerBuffer(userEntries, count, isSingleInput, isStack, target
         for i = 1, count do
             local entry = userEntries[i]
             local displayName = entry and (entry.displayName or entry.name) or ""
-            answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize, isCircle))
+            answerGroup:insert(createBox(displayName, "none", startX + (i - 1) * spacing, posY, boxSize))
         end
 
         -- Far-Right Side Action Buttons (Delete above Submit), perfectly mirroring Left Audio Pair
         local rightActionX = screenOriginX + screenW - math.max(52, screenW * 0.08)
 
-        if not isCircle and #userEntries > 0 then
+        if not isSingleInput and #userEntries > 0 then
             createPillButton(answerGroup, "⌫ del", rightActionX, posY - 23, 86, 38, {0.6, 0.25, 0.25}, 15, function()
                 if navCallbacks.onDeleteAction then navCallbacks.onDeleteAction() end
             end)
         end
 
-        if not isCircle and count > 1 then
+        if not isSingleInput and count > 1 then
             createPillButton(answerGroup, "↵ submit", rightActionX, posY + 23, 86, 38, {0.2, 0.7, 0.3}, 15, function()
                 if navCallbacks.onPrimaryAction then navCallbacks.onPrimaryAction() end
             end)
@@ -840,7 +834,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
             local pitch = targetPitches and targetPitches[i]
             local displayName = formatKodalyName(res.name, pitch, tonicMIDI)
             local posY = startY - (i - 1) * verticalSpacing
-            answerGroup:insert(createBox(displayName, res.color, centerX, posY, boxSize, false))
+            answerGroup:insert(createBox(displayName, res.color, centerX, posY, boxSize))
         end
     else
         -- HORIZONTAL BUFFER FOR MELODIES
@@ -851,7 +845,7 @@ function M.updateAnswerBufferFromResults(results, isStack, targetPitches, tonicM
             local res = results[i]
             local pitch = targetPitches and targetPitches[i]
             local displayName = formatKodalyName(res.name, pitch, tonicMIDI)
-            answerGroup:insert(createBox(displayName, res.color, startX + (i - 1) * spacing, posY, boxSize, false))
+            answerGroup:insert(createBox(displayName, res.color, startX + (i - 1) * spacing, posY, boxSize))
         end
     end
 end
