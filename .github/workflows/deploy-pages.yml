@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - achievements-system
     paths:
       - 'web-build/**'
   workflow_dispatch:
