@@ -9,9 +9,12 @@ settings = {
         supported = { "landscapeRight", "landscapeLeft" },
     },
     window = {
-        defaultViewWidth = 568,
-        defaultViewHeight = 320,
-        title = "Solfège Star",
+        defaultViewWidth = 960,
+        defaultViewHeight = 640,
+        resizable = true,
+        titleText = {
+            default = "Solfège Star",
+        },
     },
     iphone = {
         xcassets = "Images.xcassets",
@@ -35,13 +38,15 @@ settings = {
         },
     },
     excludeFiles = {
-        -- Exclude all git history, documentation, system metadata, and helper utilities from device builds
+        -- Exclude all git history, documentation, system metadata, web builds, and helper utilities from device/web builds
         all = {
             ".git*",
             ".gitignore",
             ".DS_Store",
             "*.md",
             "docs/*",
+            "web-build/*",
+            "build_web.sh",
             "File Renamer.app*",
             "zzzz archives*",
         },
