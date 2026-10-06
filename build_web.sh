@@ -25,13 +25,15 @@ fi
 echo "Building Solfège Star for HTML5 (Web)..."
 mkdir -p "$OUTPUT_DIR"
 
+TMP_BUILD=$(mktemp -d /tmp/solfege_web_dst.XXXXXX)
+
 PARAMS_FILE=$(mktemp /tmp/solfege_build_params.XXXXXX.lua)
 cat << LUA > "$PARAMS_FILE"
 local params = {
     platform = 'html5',
     appName = 'SolfegeStar',
     appVersion = '1.0',
-    dstPath = '${OUTPUT_DIR}',
+    dstPath = '${TMP_BUILD}',
     projectPath = '${SCRIPT_DIR}',
 }
 return params
@@ -40,10 +42,14 @@ LUA
 "$CORONA_BUILDER" build --lua "$PARAMS_FILE"
 rm -f "$PARAMS_FILE"
 
-# Clean up temporary unpack directory if present
-if [ -d "${OUTPUT_DIR}/SolfegeStar.html5" ]; then
-    rm -rf "${OUTPUT_DIR}/SolfegeStar.html5"
+# Copy generated files from SolfegeStar.html5 to output directory
+if [ -d "${TMP_BUILD}/SolfegeStar.html5" ]; then
+    cp -R "${TMP_BUILD}/SolfegeStar.html5/"* "${OUTPUT_DIR}/"
 fi
+rm -rf "$TMP_BUILD"
+
+# Clean up raw .js and .wasm if present in output since SolfegeStar.bin already bundles them
+rm -f "${OUTPUT_DIR}/SolfegeStar.js" "${OUTPUT_DIR}/SolfegeStar.wasm"
 
 # Set proper page title
 if [ -f "${OUTPUT_DIR}/index.html" ]; then

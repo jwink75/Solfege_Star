@@ -27,12 +27,13 @@ for i = 1, maxVoices do voices[i] = 0 end
 
 function M.engine.init(prefix)
     -- Configure iOS Audio Session Category to MediaPlayback so sound plays even when physical silent switch is ON
-    if audio.setSessionProperty then
+    local platform = system.getInfo("platform")
+    if platform == "ios" or platform == "tvos" then
         pcall(function()
-            audio.setSessionProperty(audio.AudioCategory, audio.MediaPlayback)
-        end)
-        pcall(function()
-            audio.setSessionProperty(audio.MixWithOthers, false)
+            if audio.setSessionProperty then
+                audio.setSessionProperty(audio.AudioCategory, audio.MediaPlayback)
+                audio.setSessionProperty(audio.MixWithOthers, false)
+            end
         end)
     end
 
