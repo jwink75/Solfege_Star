@@ -40,10 +40,9 @@ LUA
 "$CORONA_BUILDER" build --lua "$PARAMS_FILE"
 rm -f "$PARAMS_FILE"
 
-# Move generated files from nested .html5 directory to root of web-build if needed
+# Clean up temporary unpack directory if present
 if [ -d "${OUTPUT_DIR}/SolfegeStar.html5" ]; then
-    mv "${OUTPUT_DIR}/SolfegeStar.html5"/* "${OUTPUT_DIR}/"
-    rmdir "${OUTPUT_DIR}/SolfegeStar.html5"
+    rm -rf "${OUTPUT_DIR}/SolfegeStar.html5"
 fi
 
 # Set proper page title
