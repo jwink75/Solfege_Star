@@ -187,8 +187,14 @@ function M.engine.playCadence()
 
     local function step(idx, delay)
         local tID = timer.performWithDelay(delay, function()
-            M.chord.off(cadenceVids) 
+            local oldVids = cadenceVids
             cadenceVids = M.chord.on(chords[idx], 0.5)
+            if oldVids and #oldVids > 0 then
+                local vidsToFade = oldVids
+                table.insert(activeTimers, timer.performWithDelay(80, function()
+                    M.chord.off(vidsToFade, 150)
+                end))
+            end
         end)
         table.insert(activeTimers, tID)
     end
