@@ -651,7 +651,8 @@ evaluateSubmission = function()
                             local prof = stats.getActiveProfile()
                             if prof and prof.profile_cloud_id then
                                 local cloud = require("cloud")
-                                cloud.submitScore(prof.profile_cloud_id, prof.name, boardId, checkpointRunScore, function(success, res)
+                                local orgStr = prof.organization or ""
+                                cloud.submitScore(prof.profile_cloud_id, prof.name, boardId, checkpointRunScore, orgStr, function(success, res)
                                     if success then
                                         onComplete(true, res.isNewHigh)
                                     else
@@ -992,9 +993,9 @@ handleSignInFlow = function()
         stats.setActiveProfile(selectedId)
         reinitUI()
     end, function()
-        ui.showNewUserModal(function(newName)
+        ui.showNewUserModal(function(newName, newOrg)
             if newName and #newName > 0 then
-                stats.createProfile(newName)
+                stats.createProfile(newName, newOrg)
                 reinitUI()
             end
         end)

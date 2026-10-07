@@ -5,6 +5,7 @@
 CREATE TABLE IF NOT EXISTS public.leaderboard_scores (
   profile_cloud_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   display_name TEXT NOT NULL,
+  organization TEXT DEFAULT '' NOT NULL,
   board_id TEXT NOT NULL,
   score INTEGER NOT NULL,
   achieved_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
@@ -50,3 +51,6 @@ AS $body$
   ) sub
   WHERE sub.profile_cloud_id = p_profile_cloud_id;
 $body$;
+
+-- 5. Migration statement to add organization column to existing databases
+ALTER TABLE public.leaderboard_scores ADD COLUMN IF NOT EXISTS organization TEXT DEFAULT '' NOT NULL;

@@ -78,11 +78,16 @@ function M.registerAnonymousProfile(onComplete)
 end
 
 -- 2. Submit score to the Edge Function
-function M.submitScore(profileCloudId, displayName, boardId, score, onComplete)
+function M.submitScore(profileCloudId, displayName, boardId, score, organization, onComplete)
+    if type(organization) == "function" then
+        onComplete = organization
+        organization = ""
+    end
     local url = SUPABASE_URL .. "/functions/v1/submit-score"
     local body = {
         profile_cloud_id = profileCloudId,
         display_name = displayName,
+        organization = organization or "",
         board_id = boardId,
         score = score,
         app_version = "1.0.0"

@@ -925,6 +925,7 @@ end
 ---------------------------------------------------------
 local currentModalGroup = nil
 local nativeInput = nil
+local nativeOrgInput = nil
 local preventClose = false
 local currentModalCancelCallback = nil
 
@@ -942,6 +943,10 @@ local function closeModal()
     if nativeInput and nativeInput.removeSelf then
         nativeInput:removeSelf()
         nativeInput = nil
+    end
+    if nativeOrgInput and nativeOrgInput.removeSelf then
+        nativeOrgInput:removeSelf()
+        nativeOrgInput = nil
     end
     if currentModalGroup and currentModalGroup.removeSelf then
         currentModalGroup:removeSelf()
@@ -1211,8 +1216,9 @@ function M.showSignInModal(profiles, onSelectProfile, onNewUser)
     for i, prof in ipairs(profiles) do
         local posY = 22 + (i - 1) * 44
         local btnColor = prof.isActive and {0.2, 0.55, 0.35} or {0.2, 0.25, 0.35}
-        local label = prof.name .. (prof.isActive and "  ✓" or "")
-        createPillButton(scrollView, label, scrollW * 0.5, posY, 260, 36, btnColor, 14, function()
+        local orgLabel = (prof.organization and #prof.organization > 0) and (" (" .. prof.organization .. ")") or ""
+        local label = prof.name .. orgLabel .. (prof.isActive and "  ✓" or "")
+        createPillButton(scrollView, label, scrollW * 0.5, posY, 280, 36, btnColor, 13, function()
             closeModal()
             if onSelectProfile then onSelectProfile(prof.id) end
         end)
@@ -1230,23 +1236,23 @@ function M.showNewUserModal(onCreateProfile)
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
-    local cardW = 360
-    local cardH = 220
+    local cardW = 380
+    local cardH = 270
     local card = createModalCard(currentModalGroup, cardW, cardH, "Create New User")
 
     local prompt = display.newText({
         parent = card,
-        text = "enter profile name (max 16 chars):",
+        text = "student name (max 16 chars):",
         x = centerX,
-        y = centerY - 35,
+        y = centerY - 62,
         font = native.systemFont,
-        fontSize = 14
+        fontSize = 13
     })
     prompt:setFillColor(0.8, 0.8, 0.8)
 
-    nativeInput = native.newTextField(centerX, centerY, 240, 36)
-    nativeInput.font = native.newFont(native.systemFontBold, 16)
-    nativeInput.placeholder = "Student Name"
+    nativeInput = native.newTextField(centerX, centerY - 32, 260, 32)
+    nativeInput.font = native.newFont(native.systemFontBold, 15)
+    nativeInput.placeholder = "e.g. Alex W."
     nativeInput:addEventListener("userInput", function(event)
         if event.phase == "editing" then
             if #event.text > 16 then
@@ -1255,37 +1261,92 @@ function M.showNewUserModal(onCreateProfile)
         end
     end)
 
-    createPillButton(card, "create profile", centerX - 65, centerY + 52, 130, 38, {0.2, 0.55, 0.35}, 14, function()
-        local nameStr = nativeInput and nativeInput.text or ""
-        closeModal()
-        if onCreateProfile then onCreateProfile(nameStr) end
+    local orgPrompt = display.newText({
+        parent = card,
+        text = "organization / school (optional, max 32 chars):",
+        x = centerX,
+        y = centerY + 8,
+        font = native.systemFont,
+        fontSize = 13
+    })
+    orgPrompt:setFillColor(0.8, 0.8, 0.8)
+
+    nativeOrgInput = native.newTextField(centerX, centerY + 38, 260, 32)
+    nativeOrgInput.font = native.newFont(native.systemFontBold, 14)
+    nativeOrgInput.placeholder = "e.g. Westlake High"
+    nativeOrgInput:addEventListener("userInput", function(event)
+        if event.phase == "editing" then
+            if #event.text > 32 then
+                nativeOrgInput.text = string.sub(event.text, 1, 32)
+            end
+        end
     end)
 
-    createPillButton(card, "cancel", centerX + 65, centerY + 52, 110, 38, {0.4, 0.25, 0.25}, 14, function()
+    createPillButton(card, "create profile", centerX - 70, centerY + 90, 130, 36, {0.2, 0.55, 0.35}, 14, function()
+        local nameStr = nativeInput and nativeInput.text or ""
+        local orgStr = nativeOrgInput and nativeOrgInput.text or ""
+        closeModal()
+        if onCreateProfile then onCreateProfile(nameStr, orgStr) end
+    end)
+
+    createPillButton(card, "cancel", centerX + 70, centerY + 90, 110, 36, {0.4, 0.25, 0.25}, 14, function()
         closeModal()
     end)
 end
 
-function M.showSettingsModal(profileName, onDeleteProfile)
+function M.showSettingsModal(profileName, onDeleteProfile, onUpdateOrg)
     closeModal()
     currentModalGroup = display.newGroup()
     createModalBackdrop(currentModalGroup)
 
-    local cardW = 320
-    local cardH = 200
+    local statsModule = require("stats")
+    local activeProf = statsModule.getActiveProfile() or {}
+    local currentOrg = activeProf.organization or ""
+
+    local cardW = 360
+    local cardH = 260
     local card = createModalCard(currentModalGroup, cardW, cardH, "Profile Settings")
 
     local info = display.newText({
         parent = card,
         text = "active user: " .. tostring(profileName),
         x = centerX,
-        y = centerY - 20,
+        y = centerY - 65,
         font = native.systemFontBold,
-        fontSize = 16
+        fontSize = 15
     })
     info:setFillColor(0.9, 0.9, 0.9)
 
-    createPillButton(card, "delete profile", centerX, centerY + 30, 200, 38, {0.6, 0.2, 0.2}, 14, function()
+    local orgPrompt = display.newText({
+        parent = card,
+        text = "organization / school (optional):",
+        x = centerX,
+        y = centerY - 32,
+        font = native.systemFont,
+        fontSize = 12
+    })
+    orgPrompt:setFillColor(0.8, 0.8, 0.8)
+
+    nativeOrgInput = native.newTextField(centerX, centerY - 6, 260, 32)
+    nativeOrgInput.font = native.newFont(native.systemFontBold, 14)
+    nativeOrgInput.placeholder = "e.g. Westlake High"
+    nativeOrgInput.text = currentOrg
+    nativeOrgInput:addEventListener("userInput", function(event)
+        if event.phase == "editing" then
+            if #event.text > 32 then
+                nativeOrgInput.text = string.sub(event.text, 1, 32)
+            end
+        end
+    end)
+
+    createPillButton(card, "save organization", centerX, centerY + 36, 220, 34, {0.2, 0.55, 0.35}, 13, function()
+        local newOrg = nativeOrgInput and nativeOrgInput.text or ""
+        statsModule.setOrganization(newOrg)
+        closeModal()
+        if onUpdateOrg then onUpdateOrg(newOrg) end
+    end)
+
+    createPillButton(card, "delete profile", centerX, centerY + 82, 220, 34, {0.6, 0.2, 0.2}, 13, function()
         closeModal()
         if onDeleteProfile then onDeleteProfile() end
     end)
@@ -1371,9 +1432,10 @@ function M.showStatsModal(statsSummary, diatonicStats, chromaticStats, graphData
     local achCount = 0
     for _ in pairs(achList) do achCount = achCount + 1 end
 
+    local orgText = (activeProf.organization and #activeProf.organization > 0) and ("  •  " .. activeProf.organization) or ""
     local profHeaderTxt = display.newText({
         parent = card,
-        text = (activeProf.name or "Student") .. "  •  " .. equippedTitle .. "   (🏆 " .. achCount .. " achievements)",
+        text = (activeProf.name or "Student") .. orgText .. "  •  " .. equippedTitle .. "   (🏆 " .. achCount .. " achievements)",
         x = centerX,
         y = centerY - cardH * 0.5 + 46,
         font = native.systemFontBold,
@@ -2395,7 +2457,15 @@ function M.showLeaderboardModal()
                                 local rankLbl = display.newText({ parent = tableGroup, text = badge, x = centerX - cardW * 0.5 + 35, y = rowY, font = native.systemFontBold, fontSize = 12 })
                                 rankLbl:setFillColor(1, 0.85, 0.3)
 
-                                local nameLbl = display.newText({ parent = tableGroup, text = r.display_name, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 12 })
+                                local displayName = r.display_name or "Anonymous"
+                                if r.organization and #r.organization > 0 then
+                                    displayName = displayName .. " (" .. r.organization .. ")"
+                                end
+                                if #displayName > 34 then
+                                    displayName = string.sub(displayName, 1, 31) .. "..."
+                                end
+
+                                local nameLbl = display.newText({ parent = tableGroup, text = displayName, x = centerX - 30, y = rowY, font = native.systemFontBold, fontSize = 11 })
                                 if isCurrentUser then
                                     nameLbl:setFillColor(1, 0.85, 0.3)
                                 else

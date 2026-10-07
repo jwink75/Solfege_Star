@@ -530,5 +530,39 @@ This section documents architectural trade-offs, design choices, and technical r
 * **Touch Focus Fix**: Explicitly clear stage focus on keypad re-initialization to eliminate unresponsive buttons.
 * **Online Leaderboards**: Integrated Supabase backend for global Checkpoint 1 & 2 rankings with anonymous profile authentication.
 
+---
+
+## XVIII. User Profile Organization, Web Audio Polish & Cloud Sync (v21.0)
+
+### 1. User Profile Organization & School Affiliation (`stats.lua`, `ui.lua`)
+- **Data Schema Extension**: Extended profile entity with an `organization` string attribute (max 32 characters, default `""`).
+  - Added `stats.getOrganization(profileId)` and `stats.setOrganization(organization, profileId)`.
+  - Automatic backward-compatible migration on profile load: `prof.organization = prof.organization or ""`.
+- **Profile Creation & Settings UI**:
+  - `showNewUserModal`: Provides two input fields: Student Name (max 16 chars) and Organization / School (optional, max 32 chars).
+  - `showSignInModal`: Displays player organization affiliation alongside profile name: `[Student Name] ([Organization])`.
+  - `showSettingsModal`: Displays active user name, an editable text field for updating organization affiliation, a "Save Organization" action button, and profile deletion.
+  - `showStatsModal`: Profile header displays active affiliation between name and equipped mastery title: `[Student Name] • [Organization] • [Title] (🏆 [Achievements])`.
+
+### 2. Cloud Telemetry & Online Leaderboard Affiliation (`cloud.lua`, `supabase_setup.sql`, `index.ts`)
+- **Edge Function Payload & DB Schema**:
+  - Added `organization TEXT DEFAULT '' NOT NULL` column to `public.leaderboard_scores`.
+  - Edge function `/functions/v1/submit-score` accepts, sanitizes (max 32 chars), and upserts `organization` alongside `profile_cloud_id`, `display_name`, and `score`.
+  - Checkpoint submissions transmit `prof.organization` automatically upon milestone completion.
+- **Online Leaderboard Display**:
+  - Renders player entries as `[Display Name] ([Organization])`, with ellipsis truncation for strings exceeding 34 characters to maintain aesthetic layout alignment.
+
+### 3. Web Deployment & Audio Cadence Continuity (`index.html`, `audio.lua`, `build_web.sh`)
+- **Establishing Cadence Gapless Playback**: Added Web Audio scheduling / buffer preloading enhancements to prevent audio gaps between cadence chords in browser environments.
+- **Automated Web Bundle Build**: Pipeline script `./build_web.sh` compiling Solar2D HTML5 binaries into `web-build/` for GitHub Pages hosting.
+
+***
+
+**October 6 Release Notes (v21.0):**
+* **Organization & School Affiliation**: Added optional organization/school field to user profiles, sign-in selection, profile settings, and ear training stats header.
+* **Cloud Leaderboard Affiliation**: Updated Supabase schema and Edge Function to persist and render school/organization affiliation on Checkpoint 1 & 2 leaderboards.
+* **Web Audio & Build Pipeline**: Polished cadence chord transitions for web deployments and automated HTML5 static site generation.
+
+
 
 

@@ -20,7 +20,7 @@ local pitchLabels = {
     [6] = "fi",  [7] = "sol",[8] = "le", [9] = "la", [10] = "te",[11] = "ti"
 }
 
-local function createDefaultProfile(profileId, name)
+local function createDefaultProfile(profileId, name, organization)
     local pitches = {}
     for pc = 0, 11 do
         pitches[tostring(pc)] = {
@@ -72,6 +72,7 @@ local function createDefaultProfile(profileId, name)
     return {
         id = profileId or "user_default",
         name = name or "Default Student",
+        organization = organization or "",
         createdAt = os.time(),
         lastActive = os.time(),
         meta = {
@@ -132,6 +133,7 @@ function M.load()
             if success and decoded and type(decoded) == "table" and decoded.profiles and decoded.activeProfileId then
                 data = decoded
                 for _, prof in pairs(data.profiles) do
+                    prof.organization = prof.organization or ""
                     prof.achievements = prof.achievements or {}
                     prof.equippedTitle = prof.equippedTitle or "Mastery Level 1"
                     prof.unlockedTitles = prof.unlockedTitles or { "Mastery Level 1" }
@@ -212,12 +214,29 @@ function M.recordDailyActivity(profileId)
     end
 end
 
+function M.getOrganization(profileId)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    return prof and (prof.organization or "") or ""
+end
+
+function M.setOrganization(organization, profileId)
+    local prof = profileId and (data.profiles and data.profiles[profileId]) or M.getActiveProfile()
+    if prof then
+        local cleanOrg = string.sub(tostring(organization or ""):gsub("^%s*(.-)%s*$", "%1"), 1, 32)
+        prof.organization = cleanOrg
+        M.save()
+        return true
+    end
+    return false
+end
+
 function M.getAllProfiles()
     local list = {}
     for id, p in pairs(data.profiles) do
         table.insert(list, {
             id = id,
             name = p.name or "Student",
+            organization = p.organization or "",
             title = p.equippedTitle or "Mastery Level 1",
             createdAt = p.createdAt or 0,
             lastActive = p.lastActive or 0,
@@ -228,12 +247,13 @@ function M.getAllProfiles()
     return list
 end
 
-function M.createProfile(name)
+function M.createProfile(name, organization)
     local cleanName = string.sub(tostring(name or "New Student"):gsub("^%s*(.-)%s*$", "%1"), 1, 16)
     if #cleanName == 0 then cleanName = "New Student" end
+    local cleanOrg = string.sub(tostring(organization or ""):gsub("^%s*(.-)%s*$", "%1"), 1, 32)
 
     local newId = "user_" .. tostring(os.time()) .. "_" .. tostring(math.random(1000, 9999))
-    local prof = createDefaultProfile(newId, cleanName)
+    local prof = createDefaultProfile(newId, cleanName, cleanOrg)
 
     data.profiles[newId] = prof
     data.activeProfileId = newId

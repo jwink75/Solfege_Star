@@ -21,7 +21,8 @@ serve(async (req) => {
       })
     }
 
-    const { profile_cloud_id, display_name, board_id, score, app_version } = await req.json()
+    const { profile_cloud_id, display_name, organization, board_id, score, app_version } = await req.json()
+    const org = typeof organization === 'string' ? organization.trim().slice(0, 32) : ''
 
     // 1. Basic validation
     if (!profile_cloud_id || !display_name || !board_id || typeof score !== 'number' || !app_version) {
@@ -89,6 +90,7 @@ serve(async (req) => {
         .upsert({
           profile_cloud_id,
           display_name,
+          organization: org,
           board_id,
           score,
           achieved_at: new Date().toISOString(),
